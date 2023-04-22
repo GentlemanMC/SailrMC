@@ -1,1 +1,1 @@
-# Temporary readme.md
+# SailrMC, the launcher for winners.
