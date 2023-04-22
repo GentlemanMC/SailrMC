@@ -102,7 +102,7 @@
     <widget class="QLabel" name="skinLabel">
      <property name="minimumSize">
       <size>
-       <width>160</width>
+       <width>140</width>
        <height>320</height>
       </size>
      </property>
