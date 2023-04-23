@@ -175,8 +175,8 @@ set(Launcher_QT_VERSION_MAJOR "6" CACHE STRING "Major Qt version to build agains
 # Feel free to use this key for any of your forks
 set(Launcher_MSA_CLIENT_ID "8aff6692-cff2-4e81-bf24-5978aefffe3e" CACHE STRING "Client ID you can get from Microsoft Identity Platform when you register an application")
 
-# place a curseforge api key here
-set(Launcher_CURSEFORGE_API_KEY "" CACHE STRING "API key for the CurseForge platform")
+# this is just a temporary stub lol, as we are testing out an alternative to the curseforge api. As you can see, this key is just some lyrics from a song
+set(Launcher_CURSEFORGE_API_KEY "DoYouThinkImStupidDoYouThink.ImBa.t-shitCrazyHavinYo/uOnMyMi" CACHE STRING "API key for the CurseForge platform")
 
 
 #### Check the current Git commit and branch
