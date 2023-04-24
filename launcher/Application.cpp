@@ -3,11 +3,12 @@
 // SPDX-License-Identifier: GPL-3.0-only AND Apache-2.0
 
 /*
- *  Prism Launcher - Minecraft Launcher
+ *  SailrMC - Minecraft Launcher
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
  *  Copyright (C) 2022 Lenny McLennington <lenny@sneed.church>
  *  Copyright (C) 2022 Tayou <tayou@gmx.net>
  *  Copyright (C) 2023 TheKodeToad <TheKodeToad@proton.me>
+ *  Copyright (C) 2023 z-ffqq <ffqq@danwin1210.de>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -652,17 +653,6 @@ Application::Application(int &argc, char **argv) : QApplication(argc, argv)
         // Custom Microsoft Authentication Client ID
         m_settings->registerSetting("MSAClientIDOverride", "");
 
-        // Custom Flame API Key
-        {
-            m_settings->registerSetting("CFKeyOverride", "");
-            m_settings->registerSetting("FlameKeyOverride", "");
-
-            QString flameKey = m_settings->get("CFKeyOverride").toString();
-
-            if (!flameKey.isEmpty())
-                m_settings->set("FlameKeyOverride", flameKey);
-            m_settings->reset("CFKeyOverride");
-        }
         m_settings->registerSetting("ModrinthToken", "");
         m_settings->registerSetting("UserAgentOverride", "");
 
@@ -1491,16 +1481,14 @@ shared_qobject_ptr<Meta::Index> Application::metadataIndex()
     {
         m_metadataIndex.reset(new Meta::Index());
     }
-    return m_metadataIndex;
+    return m_metadataIndex; 
 }
 
 void Application::updateCapabilities()
 {
-    m_capabilities = None;
+    m_capabilities = SupportsFlame;
     if (!getMSAClientID().isEmpty())
         m_capabilities |= SupportsMSA;
-    if (!getFlameAPIKey().isEmpty())
-        m_capabilities |= SupportsFlame;
 
 #ifdef Q_OS_LINUX
     if (gamemode_query_status() >= 0)
@@ -1538,16 +1526,6 @@ QString Application::getMSAClientID()
     }
 
     return BuildConfig.MSA_CLIENT_ID;
-}
-
-QString Application::getFlameAPIKey()
-{
-    QString keyOverride = m_settings->get("FlameKeyOverride").toString();
-    if (!keyOverride.isEmpty()) {
-        return keyOverride;
-    }
-
-    return BuildConfig.FLAME_API_KEY;
 }
 
 QString Application::getModrinthAPIToken()

@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-only
 /*
- *  Prism Launcher - Minecraft Launcher
+ *  SailrMC - Minecraft Launcher
  *  Copyright (c) 2022 flowln <flowlnlnln@gmail.com>
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
  *  Copyright (C) 2023 TheKodeToad <TheKodeToad@proton.me>
+ *  Copyright (C) 2023 z-ffqq <ffqq@danwin1210.de>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -218,9 +219,7 @@ namespace Net {
 
         request.setHeader(QNetworkRequest::UserAgentHeader, APPLICATION->getUserAgent().toUtf8());
         // TODO remove duplication
-        if (APPLICATION->capabilities() & Application::SupportsFlame && request.url().host() == QUrl(BuildConfig.FLAME_BASE_URL).host()) {
-            request.setRawHeader("x-api-key", APPLICATION->getFlameAPIKey().toUtf8());
-        } else if (request.url().host() == QUrl(BuildConfig.MODRINTH_PROD_URL).host() ||
+        if (request.url().host() == QUrl(BuildConfig.MODRINTH_PROD_URL).host() ||
                    request.url().host() == QUrl(BuildConfig.MODRINTH_STAGING_URL).host()) {
             QString token = APPLICATION->getModrinthAPIToken();
             if (!token.isNull())
