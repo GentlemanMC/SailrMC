@@ -38,7 +38,7 @@ $ cmake --build build -j$(nproc)
 $ cmake --install build
 ```
 
-Note: if you are using FreeBSD, use `-j$(sysctl -n hw.ncpu)` instead.
+> Note: if you are using FreeBSD, use `-j$(sysctl -n hw.ncpu)` instead.
 
 ### via releases
 
