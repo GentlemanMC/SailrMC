@@ -123,11 +123,6 @@ class Config {
     QString MSA_CLIENT_ID;
 
     /**
-     * Client API key for CurseForge
-     */
-    QString FLAME_API_KEY;
-
-    /**
      * Metadata repository URL prefix
      */
     QString META_URL;
@@ -161,7 +156,7 @@ class Config {
     QString MODRINTH_STAGING_URL = "https://staging-api.modrinth.com/v2";
     QString MODRINTH_PROD_URL = "https://api.modrinth.com/v2";
 
-    QString FLAME_BASE_URL = "https://api.curseforge.com/v1";
+    QString FLAME_BASE_URL = "https://api.curse.tools/v1/cf";
 
     QString versionString() const;
     /**

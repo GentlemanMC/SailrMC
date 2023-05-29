@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-only
 /*
- *  Prism Launcher - Minecraft Launcher
+ *  SailrMC - Minecraft Launcher
  *  Copyright (c) 2022 flowln <flowlnlnln@gmail.com>
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
  *  Copyright (C) 2023 TheKodeToad <TheKodeToad@proton.me>
- *  Copyright (C) 2023 Rachel Powers <508861+Ryex@users.noreply.github.com>
+ *  Copyright (C) 2023 z-ffqq <ffqq@danwin1210.de>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -43,8 +43,6 @@
 #include "BuildConfig.h"
 #include "Application.h"
 
-#include "net/Logging.h"
-
 namespace Net {
 
     bool Upload::abort()
@@ -63,11 +61,11 @@ namespace Net {
 
     void Upload::downloadError(QNetworkReply::NetworkError error) {
         if (error == QNetworkReply::OperationCanceledError) {
-            qCCritical(taskUploadLogC) << getUid().toString() << "Aborted " << m_url.toString();
+            qCritical() << "Aborted " << m_url.toString();
             m_state = State::AbortedByUser;
         } else {
             // error happened during download.
-            qCCritical(taskUploadLogC) << getUid().toString() << "Failed " << m_url.toString() << " with reason " << error;
+            qCritical() << "Failed " << m_url.toString() << " with reason " << error;
             m_state = State::Failed;
         }
     }
@@ -75,9 +73,9 @@ namespace Net {
     void Upload::sslErrors(const QList<QSslError> &errors) {
         int i = 1;
         for (const auto& error : errors) {
-            qCCritical(taskUploadLogC) << getUid().toString() << "Upload" << m_url.toString() << "SSL Error #" << i << " : " << error.errorString();
+            qCritical() << "Upload" << m_url.toString() << "SSL Error #" << i << " : " << error.errorString();
             auto cert = error.certificate();
-            qCCritical(taskUploadLogC) << getUid().toString() << "Certificate in question:\n" << cert.toText();
+            qCritical() << "Certificate in question:\n" << cert.toText();
             i++;
         }
     }
@@ -120,17 +118,17 @@ namespace Net {
              */
             redirect = QUrl(redirectStr, QUrl::TolerantMode);
             if (!redirect.isValid()) {
-                qCWarning(taskUploadLogC) << getUid().toString() << "Failed to parse redirect URL:" << redirectStr;
+                qWarning() << "Failed to parse redirect URL:" << redirectStr;
                 downloadError(QNetworkReply::ProtocolFailure);
                 return false;
             }
-            qCDebug(taskUploadLogC) << getUid().toString() << "Fixed location header:" << redirect;
+            qDebug() << "Fixed location header:" << redirect;
         } else {
-            qCDebug(taskUploadLogC) << getUid().toString() << "Location header:" << redirect;
+            qDebug() << "Location header:" << redirect;
         }
 
         m_url = QUrl(redirect.toString());
-        qCDebug(taskUploadLogC) << getUid().toString() << "Following redirect to " << m_url.toString();
+        qDebug() << "Following redirect to " << m_url.toString();
         startAction(m_network);
         return true;
     }
@@ -139,25 +137,25 @@ namespace Net {
         // handle HTTP redirection first
         // very unlikely for post requests, still can happen
         if (handleRedirect()) {
-            qCDebug(taskUploadLogC) << getUid().toString() << "Upload redirected:" << m_url.toString();
+            qDebug() << "Upload redirected:" << m_url.toString();
             return;
         }
 
         // if the download failed before this point ...
         if (m_state == State::Succeeded) {
-            qCDebug(taskUploadLogC) << getUid().toString() << "Upload failed but we are allowed to proceed:" << m_url.toString();
+            qDebug() << "Upload failed but we are allowed to proceed:" << m_url.toString();
             m_sink->abort();
             m_reply.reset();
             emit succeeded();
             return;
         } else if (m_state == State::Failed) {
-            qCDebug(taskUploadLogC) << getUid().toString() << "Upload failed in previous step:" << m_url.toString();
+            qDebug() << "Upload failed in previous step:" << m_url.toString();
             m_sink->abort();
             m_reply.reset();
             emit failed("");
             return;
         } else if (m_state == State::AbortedByUser) {
-            qCDebug(taskUploadLogC) << getUid().toString() << "Upload aborted in previous step:" << m_url.toString();
+            qDebug() << "Upload aborted in previous step:" << m_url.toString();
             m_sink->abort();
             m_reply.reset();
             emit aborted();
@@ -167,21 +165,21 @@ namespace Net {
         // make sure we got all the remaining data, if any
         auto data = m_reply->readAll();
         if (data.size()) {
-            qCDebug(taskUploadLogC) << getUid().toString() << "Writing extra" << data.size() << "bytes";
+            qDebug() << "Writing extra" << data.size() << "bytes";
             m_state = m_sink->write(data);
         }
 
         // otherwise, finalize the whole graph
         m_state = m_sink->finalize(*m_reply.get());
         if (m_state != State::Succeeded) {
-            qCDebug(taskUploadLogC) << getUid().toString() << "Upload failed to finalize:" << m_url.toString();
+            qDebug() << "Upload failed to finalize:" << m_url.toString();
             m_sink->abort();
             m_reply.reset();
             emit failed("");
             return;
         }
         m_reply.reset();
-        qCDebug(taskUploadLogC) << getUid().toString() << "Upload succeeded:" << m_url.toString();
+        qDebug() << "Upload succeeded:" << m_url.toString();
         emit succeeded();
     }
 
@@ -196,7 +194,7 @@ namespace Net {
         setStatus(tr("Uploading %1").arg(m_url.toString()));
 
         if (m_state == State::AbortedByUser) {
-            qCWarning(taskUploadLogC) << getUid().toString() << "Attempt to start an aborted Upload:" << m_url.toString();
+            qWarning() << "Attempt to start an aborted Upload:" << m_url.toString();
             emit aborted();
             return;
         }
@@ -205,10 +203,10 @@ namespace Net {
         switch (m_state) {
             case State::Succeeded:
                 emitSucceeded();
-                qCDebug(taskUploadLogC) << getUid().toString() << "Upload cache hit " << m_url.toString();
+                qDebug() << "Upload cache hit " << m_url.toString();
                 return;
             case State::Running:
-                qCDebug(taskUploadLogC) << getUid().toString() << "Uploading " << m_url.toString();
+                qDebug() << "Uploading " << m_url.toString();
                 break;
             case State::Inactive:
             case State::Failed:
@@ -221,9 +219,7 @@ namespace Net {
 
         request.setHeader(QNetworkRequest::UserAgentHeader, APPLICATION->getUserAgent().toUtf8());
         // TODO remove duplication
-        if (APPLICATION->capabilities() & Application::SupportsFlame && request.url().host() == QUrl(BuildConfig.FLAME_BASE_URL).host()) {
-            request.setRawHeader("x-api-key", APPLICATION->getFlameAPIKey().toUtf8());
-        } else if (request.url().host() == QUrl(BuildConfig.MODRINTH_PROD_URL).host() ||
+        if (request.url().host() == QUrl(BuildConfig.MODRINTH_PROD_URL).host() ||
                    request.url().host() == QUrl(BuildConfig.MODRINTH_STAGING_URL).host()) {
             QString token = APPLICATION->getModrinthAPIToken();
             if (!token.isNull())
@@ -235,13 +231,9 @@ namespace Net {
         QNetworkReply* rep = m_network->post(request, m_post_data);
 
         m_reply.reset(rep);
-        connect(rep, &QNetworkReply::downloadProgress, this,  &Upload::downloadProgress);
-        connect(rep, &QNetworkReply::finished, this, &Upload::downloadFinished);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0) // QNetworkReply::errorOccurred added in 5.15
-        connect(rep, &QNetworkReply::errorOccurred, this, &Upload::downloadError);
-#else
-        connect(rep, QOverload<QNetworkReply::NetworkError>::of(&QNetworkReply::error), this, &Upload::downloadError);
-#endif
+        connect(rep, SIGNAL(downloadProgress(qint64, qint64)), SLOT(downloadProgress(qint64, qint64)));
+        connect(rep, SIGNAL(finished()), SLOT(downloadFinished()));
+        connect(rep, SIGNAL(error(QNetworkReply::NetworkError)), SLOT(downloadError(QNetworkReply::NetworkError)));
         connect(rep, &QNetworkReply::sslErrors, this, &Upload::sslErrors);
         connect(rep, &QNetworkReply::readyRead, this, &Upload::downloadReadyRead);
     }

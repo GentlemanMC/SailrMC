@@ -33,7 +33,7 @@ void Flame::FileResolvingTask::executeTask()
         return l;
     }));
     QByteArray data = Json::toText(object);
-    auto dl = Net::Upload::makeByteArray(QUrl("https://api.curseforge.com/v1/mods/files"), result.get(), data);
+    auto dl = Net::Upload::makeByteArray(QUrl("https://api.curse.tools/v1/cf/mods/files"), result.get(), data);
     m_dljob->addNetAction(dl);
     connect(m_dljob.get(), &NetJob::finished, this, &Flame::FileResolvingTask::netJobFinished);
     m_dljob->start();
@@ -130,7 +130,7 @@ void Flame::FileResolvingTask::modrinthCheckFinished() {
         for (auto fileInfo: *block) {
             auto projectId = fileInfo->projectId;
             slugs[index] = QByteArray();
-            auto url = QString("https://api.curseforge.com/v1/mods/%1").arg(projectId);
+            auto url = QString("https://api.curse.tools/v1/cf/mods/%1").arg(projectId);
             auto dl = Net::Download::makeByteArray(url, &slugs[index]);
             slugJob->addNetAction(dl);
             index++;
