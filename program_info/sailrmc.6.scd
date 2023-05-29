@@ -1,14 +1,14 @@
-prismlauncher(6)
+sailrmc(6)
 
 
 # NAME
 
-prismlauncher - a launcher and instance manager for Minecraft.
+sailrmc - a launcher and instance manager for Minecraft.
 
 
 # SYNOPSIS
 
-*prismlauncher* [OPTIONS...]
+*sailrmc* [OPTIONS...]
 
 
 # DESCRIPTION
@@ -66,17 +66,7 @@ variables, besides other common Qt variables:
 
 *1*
 	Failure (syntax or usage error; configuration error; unexpected error).
-
-# BUGS
-
-https://github.com/PrismLauncher/PrismLauncher/issues
-
-# RESOURCES
-
-GitHub: https://github.com/PrismLauncher/PrismLauncher
-
-Main website: https://prismlauncher.org
-
 # AUTHORS
 
+SailrMC contributors
 Prism Launcher Contributors

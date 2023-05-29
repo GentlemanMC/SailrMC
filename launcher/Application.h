@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-only
 /*
- *  Prism Launcher - Minecraft Launcher
+ *  SailrMCr - Minecraft Launcher
  *  Copyright (C) 2022 Sefa Eyeoglu <contact@scrumplex.net>
  *  Copyright (C) 2022 Tayou <tayou@gmx.net>
  *  Copyright (C) 2023 TheKodeToad <TheKodeToad@proton.me>
- *
+ *  Copyright (C) 2023 z-ffqq <ffqq@danwin1210.de>
+ * 
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation, version 3.
@@ -177,7 +178,6 @@ public:
     QString getJarPath(QString jarFile);
 
     QString getMSAClientID();
-    QString getFlameAPIKey();
     QString getModrinthAPIToken();
     QString getUserAgent();
     QString getUserAgentUncached();

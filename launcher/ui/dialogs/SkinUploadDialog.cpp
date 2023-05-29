@@ -36,6 +36,11 @@
 #include <QFileInfo>
 #include <QFileDialog>
 #include <QPainter>
+#include <QPixmap>
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QNetworkReply>
+#include <QEventLoop>
 
 #include <FileSystem.h>
 
@@ -183,4 +188,15 @@ SkinUploadDialog::SkinUploadDialog(MinecraftAccountPtr acct, QWidget *parent)
             ui->capeCombo->setCurrentIndex(index);
         }
     }
+
+    // use the crafatar api and pixmap to fetch account's avatar from the uuid
+    QPixmap pixmap;
+    QNetworkAccessManager manager;
+    QNetworkReply *reply = manager.get(QNetworkRequest(QUrl(QString("https://crafatar.com/renders/body/%1").arg(data.profileId()))));
+    QEventLoop loop;
+    QObject::connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
+    loop.exec();
+    QByteArray skinData = reply->readAll();
+    pixmap.loadFromData(skinData);
+    ui->skinLabel->setPixmap(pixmap);
 }

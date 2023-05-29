@@ -63,17 +63,17 @@ class FlameAPI : public NetworkResourceAPI {
             get_arguments.append(QString("modLoaderType=%1").arg(getMappedModLoader(args.loaders.value())));
         get_arguments.append(gameVersionStr);
 
-        return "https://api.curseforge.com/v1/mods/search?gameId=432&" + get_arguments.join('&');
+        return "https://api.curse.tools/v1/cf/mods/search?gameId=432&" + get_arguments.join('&');
     };
 
     [[nodiscard]] std::optional<QString> getInfoURL(QString const& id) const override
     {
-        return QString("https://api.curseforge.com/v1/mods/%1").arg(id);
+        return QString("https://api.curse.tools/v1/cf/mods/%1").arg(id);
     };
 
     [[nodiscard]] std::optional<QString> getVersionsURL(VersionSearchArgs const& args) const override
     {
-        QString url{QString("https://api.curseforge.com/v1/mods/%1/files?pageSize=10000&").arg(args.pack.addonId.toString())};
+        QString url{QString("https://api.curse.tools/v1/cf/mods/%1/files?pageSize=10000&").arg(args.pack.addonId.toString())};
 
         QStringList get_parameters;
         if (args.mcVersions.has_value())

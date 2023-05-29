@@ -33,31 +33,9 @@ void Flame::FileResolvingTask::executeTask()
         return l;
     }));
     QByteArray data = Json::toText(object);
-    auto dl = Net::Upload::makeByteArray(QUrl("https://api.curseforge.com/v1/mods/files"), result.get(), data);
+    auto dl = Net::Upload::makeByteArray(QUrl("https://api.curse.tools/v1/cf/mods/files"), result.get(), data);
     m_dljob->addNetAction(dl);
-
-    auto step_progress = std::make_shared<TaskStepProgress>();
-    connect(m_dljob.get(), &NetJob::finished, this, [this, step_progress]() {
-        step_progress->state = TaskStepState::Succeeded;
-        stepProgress(*step_progress);
-        netJobFinished();
-    });
-    connect(m_dljob.get(), &NetJob::failed, this, [this, step_progress](QString reason) {
-        step_progress->state = TaskStepState::Failed;
-        stepProgress(*step_progress);
-        emitFailed(reason);
-    });
-    connect(m_dljob.get(), &NetJob::stepProgress, this, &FileResolvingTask::propogateStepProgress);
-    connect(m_dljob.get(), &NetJob::progress, this, [this, step_progress](qint64 current, qint64 total) {
-        qDebug() << "Resolve slug progress" << current << total;
-        step_progress->update(current, total);
-        stepProgress(*step_progress);
-    });
-    connect(m_dljob.get(), &NetJob::status, this, [this, step_progress](QString status) {
-        step_progress->status = status;
-        stepProgress(*step_progress);
-    });
-
+    connect(m_dljob.get(), &NetJob::finished, this, &Flame::FileResolvingTask::netJobFinished);
     m_dljob->start();
 }
 
@@ -66,7 +44,7 @@ void Flame::FileResolvingTask::netJobFinished()
     setProgress(1, 3);
     // job to check modrinth for blocked projects
     m_checkJob.reset(new NetJob("Modrinth check", m_network));
-    blockedProjects = QMap<File*, std::shared_ptr<QByteArray>>();
+    blockedProjects = QMap<File *,QByteArray *>();
 
     QJsonDocument doc;
     QJsonArray array;
@@ -93,8 +71,8 @@ void Flame::FileResolvingTask::netJobFinished()
             auto hash = out.hash;
             if(!hash.isEmpty()) {
                 auto url = QString("https://api.modrinth.com/v2/version_file/%1?algorithm=sha1").arg(hash);
-                auto output = std::make_shared<QByteArray>();
-                auto dl = Net::Download::makeByteArray(QUrl(url), output.get());
+                auto output = new QByteArray();
+                auto dl = Net::Download::makeByteArray(QUrl(url), output);
                 QObject::connect(dl.get(), &Net::Download::succeeded, [&out]() {
                     out.resolved = true;
                 });
@@ -104,27 +82,7 @@ void Flame::FileResolvingTask::netJobFinished()
             }
         }
     }
-    auto step_progress = std::make_shared<TaskStepProgress>();
-    connect(m_checkJob.get(), &NetJob::finished, this, [this, step_progress]() {
-        step_progress->state = TaskStepState::Succeeded;
-        stepProgress(*step_progress);
-        modrinthCheckFinished();
-    });
-    connect(m_checkJob.get(), &NetJob::failed, this, [this, step_progress](QString reason) {
-        step_progress->state = TaskStepState::Failed;
-        stepProgress(*step_progress);
-        emitFailed(reason);
-    });
-    connect(m_checkJob.get(), &NetJob::stepProgress, this, &FileResolvingTask::propogateStepProgress);
-    connect(m_checkJob.get(), &NetJob::progress, this, [this, step_progress](qint64 current, qint64 total) {
-        qDebug() << "Resolve slug progress" << current << total;
-        step_progress->update(current, total);
-        stepProgress(*step_progress);
-    });
-    connect(m_checkJob.get(), &NetJob::status, this, [this, step_progress](QString status) {
-        step_progress->status = status;
-        stepProgress(*step_progress);
-    });
+    connect(m_checkJob.get(), &NetJob::finished, this, &Flame::FileResolvingTask::modrinthCheckFinished);
 
     m_checkJob->start();
 }
@@ -137,6 +95,7 @@ void Flame::FileResolvingTask::modrinthCheckFinished() {
         auto &out = *it;
         auto bytes = blockedProjects[out];
         if (!out->resolved) {
+            delete bytes;
             continue;
         }
 
@@ -153,9 +112,11 @@ void Flame::FileResolvingTask::modrinthCheckFinished() {
         } else {
             out->resolved = false;
         }
+
+        delete bytes;
     }
     //copy to an output list and filter out projects found on modrinth
-    auto block = std::make_shared<QList<File*>>();
+    auto block = new QList<File *>();
     auto it = blockedProjects.keys();
     std::copy_if(it.begin(), it.end(), std::back_inserter(*block), [](File *f) {
         return !f->resolved;
@@ -163,48 +124,32 @@ void Flame::FileResolvingTask::modrinthCheckFinished() {
     //Display not found mods early
     if (!block->empty()) {
         //blocked mods found, we need the slug for displaying.... we need another job :D !
-        m_slugJob.reset(new NetJob("Slug Job", m_network));
-        int index = 0;
-        for (auto mod : *block) {
-            auto projectId = mod->projectId;
-            auto output = std::make_shared<QByteArray>();
-            auto url = QString("https://api.curseforge.com/v1/mods/%1").arg(projectId);
-            auto dl = Net::Download::makeByteArray(url, output.get());
-            qDebug() << "Fetching url slug for file:" << mod->fileName;
-            QObject::connect(dl.get(), &Net::Download::succeeded, [block, index, output]() {
-                auto mod = block->at(index);  // use the shared_ptr so it is captured and only freed when we are done
-                auto json = QJsonDocument::fromJson(*output);
-                auto base = Json::requireString(Json::requireObject(Json::requireObject(Json::requireObject(json),"data"),"links"),
-                        "websiteUrl");
-                auto link = QString("%1/download/%2").arg(base, QString::number(mod->fileId));
-                mod->websiteUrl = link;
-            });
-            m_slugJob->addNetAction(dl);
+        auto slugJob = new NetJob("Slug Job", m_network);
+        auto slugs = QVector<QByteArray>(block->size());
+        auto index = 0;
+        for (auto fileInfo: *block) {
+            auto projectId = fileInfo->projectId;
+            slugs[index] = QByteArray();
+            auto url = QString("https://api.curse.tools/v1/cf/mods/%1").arg(projectId);
+            auto dl = Net::Download::makeByteArray(url, &slugs[index]);
+            slugJob->addNetAction(dl);
             index++;
         }
-        auto step_progress = std::make_shared<TaskStepProgress>();
-        connect(m_slugJob.get(), &NetJob::succeeded, this, [this, step_progress]() {
-            step_progress->state = TaskStepState::Succeeded;
-            stepProgress(*step_progress);
+        connect(slugJob, &NetJob::succeeded, this, [slugs, this, slugJob, block]() {
+            slugJob->deleteLater();
+            auto index = 0;
+            for (const auto &slugResult: slugs) {
+                auto json = QJsonDocument::fromJson(slugResult);
+                auto base = Json::requireString(Json::requireObject(Json::requireObject(Json::requireObject(json),"data"),"links"),
+                        "websiteUrl");
+                auto mod = block->at(index);
+                auto link = QString("%1/download/%2").arg(base, QString::number(mod->fileId));
+                mod->websiteUrl = link;
+                index++;
+            }
             emitSucceeded();
         });
-        connect(m_slugJob.get(), &NetJob::failed, this, [this, step_progress](QString reason) {
-            step_progress->state = TaskStepState::Failed;
-            stepProgress(*step_progress);
-            emitFailed(reason);
-        });
-        connect(m_slugJob.get(), &NetJob::stepProgress, this, &FileResolvingTask::propogateStepProgress);
-        connect(m_slugJob.get(), &NetJob::progress, this, [this, step_progress](qint64 current, qint64 total) {
-            qDebug() << "Resolve slug progress" << current << total;
-            step_progress->update(current, total);
-            stepProgress(*step_progress);
-        });
-        connect(m_slugJob.get(), &NetJob::status, this, [this, step_progress](QString status) {
-            step_progress->status = status;
-            stepProgress(*step_progress);
-        });
-
-        m_slugJob->start();
+        slugJob->start();
     } else {
         emitSucceeded();
     }
